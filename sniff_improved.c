@@ -34,9 +34,9 @@ struct tcpheader {
   unsigned short tcp_dport;               /* destination port */
   unsigned int   tcp_seq;                 /* sequence number */
   unsigned int   tcp_ack;                 /* acknowledgement number */
-  //unsigned char tcp_offx2
-  unsigned char  tcp_Reserved:4;
-  unsigned char  tcp_H_len:4;               /* data offset, rsvd */
+  unsigned char tcp_offx2;
+  //unsigned char  tcp_Reserved:4;
+  //unsigned char  tcp_H_len:4;               /* data offset, rsvd */
 #define TH_OFF(th)      (((th)->tcp_offx2 & 0xf0) >> 4)
   unsigned char  tcp_flags;
 #define TH_FIN  0x01
@@ -66,12 +66,12 @@ void got_packet(unsigned char *args, const struct pcap_pkthdr *header,
                            (packet + sizeof(struct ethheader)); 
    struct tcpheader *tcp = (struct tcpheader *)
                             (packet + sizeof(struct ethheader)+ip->iph_ihl*4);
-    struct data *data = (struct data *)(packet + sizeof(struct ethheader)+ip->iph_ihl*4+tcp->tcp_H_len*4);
+    struct data *data = (struct data *)(packet + sizeof(struct ethheader)+ip->iph_ihl*4+((tcp->tcp_offx2 & 0xf0)>>4)*4);
     
     //printf("size: %zu\n",sizeof(struct ethheader));
     //printf("size: %d\n",ip->iph_ihl*4);
     //printf("size: %d\n",tcp->tcp_offx2*4);
-    //printf("size:%d",tcp->tcp_offx2);
+    //printf("size:%d\n",((tcp->tcp_offx2 & 0xf0)>>4)*4);
 
     printf("       src mac: %s\n", ether_ntoa((struct ether_addr *)eth->ether_shost));   
     printf("       dst mac: %s\n", ether_ntoa((struct ether_addr *)eth->ether_dhost));   
@@ -79,6 +79,7 @@ void got_packet(unsigned char *args, const struct pcap_pkthdr *header,
     printf("       dst ip: %s\n", inet_ntoa(ip->iph_destip));  
     printf("       src port: %d\n", ntohs(tcp->tcp_sport));   
     printf("       dst port: %d\n", ntohs(tcp->tcp_dport));  
+
     printf("==========data==========\n");
     for(int i=0;i<460;i++){
       if(isprint(data->data[i]))
@@ -88,10 +89,11 @@ void got_packet(unsigned char *args, const struct pcap_pkthdr *header,
       }
     }
     printf("\n");
+
     /* determine protocol */
     switch(ip->iph_protocol) {                                 
         case IPPROTO_TCP:
-            printf("   Protocol: TCP\n");
+            //printf("   Protocol: TCP\n");
             printf("========================\n");
             return;
         case IPPROTO_UDP:
